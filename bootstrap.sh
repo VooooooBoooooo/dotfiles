@@ -994,7 +994,7 @@ collect_environment() {
     done
 
     if ((USE_1PASSWORD)); then
-      local default_vault=Private
+      local default_vault=Personal
       read -rp "${WHITE}>>> 1Password Vault name${RESET} (<Enter> for '$default_vault'): " OP_VAULT
       OP_VAULT="${OP_VAULT:-$default_vault}"
 
@@ -1254,9 +1254,9 @@ configure_git_and_github() {
     local agent_file="$XDG_CONFIG_HOME/1Password/ssh/agent.toml"
     if [[ -f $agent_file ]]; then
       if ((DRY_RUN)); then
-        logg -i "[dry-run] perl -pi -e \"s/vault = \\\"Private\\\"/vault = \\\"$OP_VAULT\\\"/g\" $agent_file"
+        logg -i "[dry-run] perl -pi -e \"s/^vault = \\\".*\\\"/vault = \\\"$OP_VAULT\\\"/g\" $agent_file"
       else
-        perl -pi -e "s/vault = \"Private\"/vault = \"$OP_VAULT\"/g" "$agent_file"
+        perl -pi -e "s/^vault = \".*\"/vault = \"$OP_VAULT\"/g" "$agent_file"
       fi
     else
       logg -w "1Password SSH agent config not found at $agent_file"
