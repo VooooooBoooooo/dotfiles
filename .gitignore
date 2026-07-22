@@ -6,6 +6,7 @@
 auth/ssh/keys/**
 !auth/ssh/keys/**/
 !auth/ssh/keys/**/.gitkeep
+auth/1Password/telemetry-enabled
 
 apps/karabiner/**
 !apps/karabiner/
