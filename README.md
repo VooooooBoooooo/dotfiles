@@ -275,8 +275,11 @@ Bootstrap links repo-managed config into XDG paths where the tool supports it di
 | [rustup](https://rust-lang.github.io/rustup/installation/index.html) | `RUSTUP_HOME="$XDG_DATA_HOME/rustup"` | Rust toolchains and rustup settings |
 | [Cargo](https://doc.rust-lang.org/cargo/) | `CARGO_HOME="$XDG_DATA_HOME/cargo"` | Cargo bin, registry, and cache-like data |
 | [zoxide](https://github.com/ajeetdsouza/zoxide#environment-variables) | `_ZO_DATA_DIR="$XDG_DATA_HOME/zoxide"` | Jump database |
-| Codex | `CODEX_HOME="$XDG_STATE_HOME/codex"` | Codex CLI state and runtime-owned `config.toml`; bootstrap exports this for shells, links `$CODEX_HOME/AGENTS.md -> ../../../.dotfiles/ai/AGENTS.md` for global instructions, and only merges known SourDiesel UI preference keys from `ai/codex`. |
+| Codex | `CODEX_HOME="$XDG_STATE_HOME/codex"`; `~/.codex -> .local/state/codex` | Codex CLI and desktop state live under XDG state. Bootstrap links global instructions and merges only known SourDiesel preferences; the compatibility link catches a ChatGPT/Codex desktop Computer Use startup path that still writes notifier config through `~/.codex`. |
 | Pi coding agent | `PI_CODING_AGENT_DIR="$XDG_STATE_HOME/pi/agent"` | Pi auth, sessions, settings, and runtime state stay in XDG state; bootstrap links `AGENTS.md -> ../../../../.dotfiles/ai/AGENTS.md`, plus repo-managed `ai/pi/models.json` and `ai/pi/themes/sourdiesel.json`, into that agent dir for global instructions, local Ollama models, and the SourDiesel TUI theme. |
+| [Ponytail](https://github.com/DietrichGebert/ponytail) | `$XDG_CONFIG_HOME/ponytail/config.json` | Bootstrap seeds the shared default-mode config without replacing user changes; Claude Code tracks its plugin declaration and status line, while downloaded packages and the other harness installs remain runtime-owned. |
+| [Hermes Agent](https://github.com/NousResearch/hermes-agent) | `HERMES_HOME="$XDG_DATA_HOME/hermes"` | Hermes supports one unified root rather than separate XDG config/data/state/cache paths. Durable skills, memories, credentials, the source checkout, and its virtual environment live directly under XDG data. |
+| [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) | YAML `auth-dir: "~/.local/state/cli-proxy-api"` | OAuth credentials and fallback error logs share a private state directory; version 7.2.75 needs an explicit path because it does not honor XDG state variables or provide an auth-directory environment override. |
 | [Ollama](https://github.com/ollama/ollama) | `OLLAMA_HOST="127.0.0.1:11434"`, `OLLAMA_FLASH_ATTENTION=1`, `OLLAMA_KV_CACHE_TYPE=q8_0` | Local model runner endpoint and Apple Silicon-friendly runtime defaults used by Pi's OpenAI-compatible `ollama` provider. |
 | [Claude Code](https://code.claude.com/docs/en/env-vars) | `CLAUDE_CONFIG_DIR="$XDG_CONFIG_HOME/claude"` | Bootstrap links repo-managed `ai/claude-code/settings.json` plus `CLAUDE.md -> ../../.dotfiles/ai/AGENTS.md` into Claude's config dir; Claude-owned runtime state such as `~/.claude.json` is left unmanaged. |
 | Neovim | `NVIM_LOG_FILE="$XDG_STATE_HOME/nvim/nvim.log"` | Neovim log |
@@ -302,6 +305,7 @@ Bootstrap links repo-managed config into XDG paths where the tool supports it di
 - [Atuin](https://atuin.sh/) replaces shell history with searchable SQLite-backed history and optional encrypted sync.
 - Shared aliases and functions live under [`shells`](./shells).
 - Herdr is the primary pane/workspace workflow for agent sessions. Repo-managed Herdr config lives under [`ai/herdr`](./ai/herdr) and links to `~/.config/herdr`.
+- `claudex` runs Claude Code with `gpt-5.6-sol` through the loopback-only [CLIProxyAPI](https://github.com/router-for-me/CLIProxyAPI) service. Provider credentials remain user-owned; connect once with `cliproxyapi -codex-login`. CLIProxyAPI state is explicitly redirected with YAML `auth-dir` to the private `~/.local/state/cli-proxy-api` directory; version 7.2.75 has no XDG or auth-directory environment-variable support, and fallback error logs in that directory may contain sensitive request data.
 - [`ai/templates`](./ai/templates) stores starter agent-memory files that can be copied into new repos or scratch workspaces when needed.
 - Bash functions mirror Zsh functions where practical so Bash does not rely on Zsh wrappers.
 
@@ -326,9 +330,10 @@ Bootstrap links repo-managed config into XDG paths where the tool supports it di
 
 - Herdr is the primary terminal workspace/pane workflow. Its repo-managed config lives in [`ai/herdr`](./ai/herdr) and bootstrap links it to `~/.config/herdr`.
 - The default `herdr` target installs the official release into `~/.local/bin` when missing. During migration it also removes repo-managed CIA/eza links and uninstalls the old Cargo `cia` and `eza` packages; eva is installed by the enabled Rust tooling phase.
-- Herdr shell helpers label Codex panes with the Codex thread title using the Nerd Font robot-outline icon, matching Pi's thread-title pane labels.
+- Herdr shell helpers label Codex panes after the first prompt assigns a thread title, using the Nerd Font robot-outline icon to match Pi's thread-title pane labels; restored Codex sessions start the same title watcher automatically.
 - [WezTerm](https://wezterm.org/) config lives in [`terminals/wezterm`](./terminals/wezterm).
 - Pi's repo-managed config lives under [`ai/pi`](./ai/pi): bootstrap links `$PI_CODING_AGENT_DIR/AGENTS.md -> ../../../../.dotfiles/ai/AGENTS.md` for global instructions; `models.json` is symlinked to `$PI_CODING_AGENT_DIR/models.json` and points Pi at Ollama's OpenAI-compatible endpoint for free local models such as `qwen2.5-coder:7b`; `themes/sourdiesel.json` is symlinked into `$PI_CODING_AGENT_DIR/themes/` and keeps Markdown/code blocks on `BLACK_HEX` text with straight `color237` section separators matching unfocused tmux panes.
+- [Ponytail](https://github.com/DietrichGebert/ponytail) runs in `full` mode by default across Claude Code, Codex, Pi, and Hermes. Bootstrap seeds [`ai/ponytail/config.json`](./ai/ponytail/config.json) to `$XDG_CONFIG_HOME/ponytail/config.json` only when absent, so `/ponytail default <mode>` remains user-owned. Harness plugin/package installs are runtime state; [`ai/ponytail/README.md`](./ai/ponytail/README.md) records their native install commands.
 - The iTerm floating profile should launch a dedicated Herdr session with `/bin/bash -lc 'exec "$HOME/.dotfiles/terminals/iterm2/scripts/float-herdr.sh"'` so it does not perturb the main WezTerm client. The helper at [`terminals/iterm2/scripts/float-herdr.sh`](./terminals/iterm2/scripts/float-herdr.sh) clears inherited `HERDR_*` variables and starts `$HOME/.local/bin/herdr --session float`.
 - macOS Terminal and iTerm-related profile assets live under [`terminals`](./terminals).
 - Hammerspoon automates floating terminal behavior, window management, and app hotkeys.
@@ -349,19 +354,21 @@ Native application theme files remain hand-authored. After changing the palette 
 
 ## 🧩 VS Code
 
-This repository tracks VS Code settings in [`editors/vscode/settings.json`](./editors/vscode/settings.json).
+This repository tracks VS Code settings in [`editors/vscode/settings.json`](./editors/vscode/settings.json). The setup uses VS Code's built-in dark theme with direct SourDiesel workbench, semantic-token, TextMate, and ANSI overrides, so it does not depend on a third-party color theme. Editor and integrated-terminal typography mirrors WezTerm's JetBrains Mono Nerd Font ExtraLight at 15px; external terminals open in WezTerm.
 
 Bootstrap configures:
 
 - `~/.config/vscode -> ~/.dotfiles/editors/vscode`
-- macOS settings symlink at `~/Library/Application Support/Code/User/settings.json`
+- macOS portable root at `$XDG_DATA_HOME/vscode` through `VSCODE_PORTABLE`
+- macOS settings symlink at `$XDG_DATA_HOME/vscode/user-data/User/settings.json`
 - Linux settings symlink at `$XDG_CONFIG_HOME/Code/User/settings.json`
-- extension and CLI data under `~/.vscode -> $XDG_DATA_HOME/vscode`
+- compatibility extension/CLI path at `~/.vscode -> $XDG_DATA_HOME/vscode`
 
 Notes:
 
-- macOS VS Code does not use `~/.config/Code/User/settings.json`; it uses `~/Library/Application Support/Code/User`.
-- Linux VS Code uses `$XDG_CONFIG_HOME/Code/User/settings.json`.
+- macOS shell and launchd environments both export `VSCODE_PORTABLE`, so terminal, Finder, Spotlight, and Dock launches use the same root.
+- Portable mode stores macOS user data in `$XDG_DATA_HOME/vscode/user-data`, extensions in `$XDG_DATA_HOME/vscode/extensions`, and shared state in `$XDG_DATA_HOME/vscode/shared-data`; this prevents VS Code 1.129 from recreating `~/.vscode-shared`.
+- Linux continues to use its native `$XDG_CONFIG_HOME/Code/User` settings path.
 - `~/.config/vscode` is the repo source grouping, not VS Code's native app config target.
 
 ## 🔐 1Password Integration
@@ -517,7 +524,7 @@ The SourDiesel fragment manages Codex UI and TUI status-line preferences. TUI se
 
 Shared color values are defined by [`themes/sourdiesel/palette.toml`](./themes/sourdiesel/palette.toml); the Codex fragment is a validated consumer of that palette.
 
-On macOS, bootstrap also publishes `CODEX_HOME`, `NVIM_LOG_FILE`, and the XDG base directories through `launchctl setenv` for subprocesses that inherit launchd environment. The Homebrew `codex` CLI remains the supported Codex harness.
+On macOS, bootstrap publishes `CODEX_HOME`, `HERMES_HOME`, `PI_CODING_AGENT_DIR`, `NVIM_LOG_FILE`, the Ollama runtime variables, and the XDG base directories through `launchctl setenv`. The managed `com.mubuntu.xdg-environment` LaunchAgent republishes them at each GUI login so desktop apps such as ChatGPT/Codex inherit the relocated roots after a reboot. The Homebrew `codex` CLI remains the supported Codex harness.
 
 Keep `ai/codex/` limited to repo-managed Codex inputs:
 
@@ -631,7 +638,9 @@ ls -l "$HOME/.vscode"
 On macOS:
 
 ```sh
-ls -l "$HOME/Library/Application Support/Code/User/settings.json"
+printf '%s\n' "$VSCODE_PORTABLE"
+ls -l "$XDG_DATA_HOME/vscode/user-data/User/settings.json"
+test ! -e "$HOME/.vscode-shared"
 ```
 
 On Linux:

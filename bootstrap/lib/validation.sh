@@ -106,9 +106,13 @@ check_bootstrap() {
   check_path "$BOOTSTRAP_ROOT/bootstrap/lib/validation.sh"
   check_path "$BOOTSTRAP_ROOT/shells/env"
   check_path "$BOOTSTRAP_ROOT/shells/starship.toml"
+  check_path "$BOOTSTRAP_ROOT/launchd/com.mubuntu.xdg-environment.plist"
+  check_path "$BOOTSTRAP_ROOT/launchd/set-xdg-environment.sh"
   check_path "$BOOTSTRAP_ROOT/cli/fzf/config"
   check_path "$BOOTSTRAP_ROOT/ai/herdr/config.toml"
+  check_path "$BOOTSTRAP_ROOT/ai/herdr/scripts/herdr-claude-title-watch"
   check_path "$BOOTSTRAP_ROOT/ai/herdr/scripts/herdr-codex-title-watch"
+  check_path "$BOOTSTRAP_ROOT/ai/cliproxyapi/config.yaml"
   check_path "$BOOTSTRAP_ROOT/ai/pi/README.md"
   check_path "$BOOTSTRAP_ROOT/ai/pi/models.json"
   check_path "$BOOTSTRAP_ROOT/ai/pi/extensions/handoff-alias.ts"
@@ -118,6 +122,8 @@ check_bootstrap() {
   check_path "$BOOTSTRAP_ROOT/ai/pi/extensions/tsconfig.json"
   check_path "$BOOTSTRAP_ROOT/ai/pi/skills/handoff/SKILL.md"
   check_path "$BOOTSTRAP_ROOT/ai/pi/themes/sourdiesel.json"
+  check_path "$BOOTSTRAP_ROOT/ai/ponytail/README.md"
+  check_path "$BOOTSTRAP_ROOT/ai/ponytail/config.json"
   check_path "$BOOTSTRAP_ROOT/auth/git/base"
   check_path "$BOOTSTRAP_ROOT/auth/git/themes/sourdiesel"
   check_path "$BOOTSTRAP_ROOT/auth/ssh/base"
@@ -176,6 +182,7 @@ doctor_bootstrap() {
   local actual=''
   local skill_dir=''
   local skill_name=''
+  local brew_prefix=''
 
   notify 'DOCTOR BOOTSTRAP'
 
@@ -297,9 +304,14 @@ doctor_bootstrap() {
   doctor_dir "$XDG_CONFIG_HOME/herdr"
   doctor_dir "$XDG_CONFIG_HOME/jupyter"
   doctor_dir "$XDG_CONFIG_HOME/npm"
+  doctor_dir "$XDG_CONFIG_HOME/ponytail"
   doctor_dir "$XDG_DATA_HOME/jupyter"
   doctor_dir "$XDG_DATA_HOME/zsh"
   doctor_dir "$XDG_DATA_HOME/vscode"
+  if [[ $OS_TYPE == macos ]]; then
+    doctor_dir "$XDG_DATA_HOME/vscode/shared-data"
+    doctor_dir "$XDG_DATA_HOME/vscode/user-data"
+  fi
   doctor_file "$XDG_STATE_HOME/codex/config.toml"
   doctor_symlink "$XDG_CONFIG_HOME/claude/CLAUDE.md" ../../.dotfiles/ai/AGENTS.md
   doctor_symlink "$XDG_STATE_HOME/codex/AGENTS.md" ../../../.dotfiles/ai/AGENTS.md
@@ -324,6 +336,7 @@ doctor_bootstrap() {
   fi
   doctor_symlink "$XDG_CONFIG_HOME/glow" ../.dotfiles/cli/glow
   doctor_symlink "$XDG_CONFIG_HOME/mycli" ../.dotfiles/cli/mycli
+  doctor_file "$XDG_CONFIG_HOME/ponytail/config.json"
   doctor_symlink "$XDG_STATE_HOME/pi/agent/models.json" ../../../../.dotfiles/ai/pi/models.json
   doctor_symlink "$XDG_STATE_HOME/pi/agent/extensions/handoff-alias.ts" ../../../../../.dotfiles/ai/pi/extensions/handoff-alias.ts
   doctor_symlink "$XDG_STATE_HOME/pi/agent/extensions/herdr-agent-state.ts" ../../../../../.dotfiles/ai/pi/extensions/herdr-agent-state.ts
@@ -361,6 +374,7 @@ doctor_bootstrap() {
       "../../../../.dotfiles/ai/codex/skills/$skill_name"
   done
   doctor_symlink "$XDG_CONFIG_HOME/starship.toml" shells/starship.toml
+  doctor_symlink "$HOME/.codex" .local/state/codex
   doctor_symlink "$HOME/.vscode" .local/share/vscode
   doctor_symlink "$HOME/.bash_profile" .config/shells/bash/.bash_profile
   doctor_symlink "$HOME/.bashrc" .config/shells/bash/.bashrc
@@ -369,7 +383,12 @@ doctor_bootstrap() {
   if [[ $OS_TYPE == macos ]]; then
     doctor_symlink "$XDG_CONFIG_HOME/hammerspoon" ../.dotfiles/apps/hammerspoon optional
     doctor_symlink "$XDG_CONFIG_HOME/karabiner" ../.dotfiles/apps/karabiner optional
-    doctor_symlink "$HOME/Library/Application Support/Code/User/settings.json" ../../../../.dotfiles/editors/vscode/settings.json optional
+    doctor_symlink "$XDG_DATA_HOME/vscode/user-data/User/settings.json" "$BOOTSTRAP_ROOT/editors/vscode/settings.json" optional
+    doctor_symlink "$HOME/Library/LaunchAgents/com.mubuntu.xdg-environment.plist" "$BOOTSTRAP_ROOT/launchd/com.mubuntu.xdg-environment.plist"
+    if command -v cliproxyapi &>/dev/null && command -v brew &>/dev/null; then
+      brew_prefix=$(brew --prefix)
+      doctor_symlink "$brew_prefix/etc/cliproxyapi.conf" "$BOOTSTRAP_ROOT/ai/cliproxyapi/config.yaml"
+    fi
   else
     doctor_symlink "$XDG_CONFIG_HOME/Code/User/settings.json" ../../../.dotfiles/editors/vscode/settings.json optional
   fi
@@ -395,6 +414,7 @@ doctor_bootstrap() {
   doctor_cmd atuin optional
   doctor_cmd bat optional
   doctor_cmd herdr
+  doctor_cmd hermes optional
   doctor_cmd tmux optional
   doctor_cmd nvim optional
   doctor_cmd ollama optional

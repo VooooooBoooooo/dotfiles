@@ -2,6 +2,7 @@
 
 brew "bash-language-server"
 brew "certifi"
+brew "cliproxyapi", restart_service: :changed
 brew "ffmpeg"
 brew "fileicon"
 brew "gawk"
@@ -26,7 +27,6 @@ brew "tmux"
 
 cask "visual-studio-code"
 
-vscode "catppuccin.catppuccin-vsc"
 vscode "ms-python.debugpy"
 vscode "ms-python.python"
 vscode "ms-python.vscode-pylance"

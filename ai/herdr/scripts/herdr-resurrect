@@ -4,6 +4,8 @@ set -euo pipefail
 state_file="${HERDR_RESURRECT_FILE:-${XDG_STATE_HOME:-$HOME/.local/state}/herdr/resurrect.json}"
 herdr_bin="${HERDR_BIN:-herdr}"
 codex_title_watch="${HERDR_CODEX_TITLE_WATCH:-$HOME/.dotfiles/ai/herdr/scripts/herdr-codex-title-watch}"
+claude_title_watch="${HERDR_CLAUDE_TITLE_WATCH:-$HOME/.dotfiles/ai/herdr/scripts/herdr-claude-title-watch}"
+claude_home="${CLAUDE_CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/claude}"
 
 usage() {
   cat <<'EOF'
@@ -14,6 +16,7 @@ Currently records:
   - nvim foreground commands, e.g. nvim -S Session.vim
   - pi foreground agents, restored with pi --session <session-file> when Herdr reports one
   - codex foreground agents, restored with codex resume <session-id> when Herdr reports one
+  - Claude Code foreground agents, including claudex, restored by session ID
 
 State defaults to: $XDG_STATE_HOME/herdr/resurrect.json
 Override with HERDR_RESURRECT_FILE=/path/to/file.
@@ -31,6 +34,16 @@ json_quote() {
   jq -Rn --arg v "$1" '$v'
 }
 
+claude_session_from_pid() {
+  local pid="$1" metadata session_id
+  [[ -n "$pid" ]] || return 1
+  metadata="$claude_home/sessions/$pid.json"
+  [[ -f "$metadata" ]] || return 1
+  session_id="$(jq -r '.sessionId // empty' "$metadata" 2>/dev/null)"
+  [[ "$session_id" =~ ^[0-9a-f-]{36}$ ]] || return 1
+  printf '%s\n' "$session_id"
+}
+
 codex_session_from_pid() {
   local pid="$1" path session_id
   [[ -n "$pid" ]] || return 1
@@ -46,11 +59,18 @@ codex_session_from_pid() {
 }
 
 pane_is_idle() {
-  local pane_id="$1" info shell_pid fg_count non_shell_count
+  local pane_id="$1" info shell_pid shell_name fg_count non_shell_count
   info="$($herdr_bin pane process-info --pane "$pane_id" 2>/dev/null || true)"
   [[ -n "$info" ]] || return 1
   shell_pid="$(jq -r '.result.process_info.shell_pid // empty' <<<"$info")"
   [[ -n "$shell_pid" ]] || return 1
+  shell_name="$(jq -r --argjson shell_pid "$shell_pid" '.result.process_info.foreground_processes[]? | select(.pid == $shell_pid) | (.argv0 // .name // empty)' <<<"$info" | head -1)"
+  shell_name="${shell_name##*/}"
+  shell_name="${shell_name#-}"
+  case "$shell_name" in
+    sh|bash|dash|fish|ksh|zsh) ;;
+    *) return 1 ;;
+  esac
   fg_count="$(jq '.result.process_info.foreground_processes | length' <<<"$info")"
   non_shell_count="$(jq --argjson shell_pid "$shell_pid" '[.result.process_info.foreground_processes[] | select(.pid != $shell_pid)] | length' <<<"$info")"
   [[ "$fg_count" -gt 0 && "$non_shell_count" -eq 0 ]]
@@ -67,7 +87,7 @@ save_state() {
 
   {
     printf '{\n  "version": 1,\n  "saved_at": %s,\n  "commands": [\n' "$(json_quote "$(date -u +%Y-%m-%dT%H:%M:%SZ)")"
-    local first=1 pane_id pinfo kind cmd cwd session_path codex_pid
+    local first=1 pane_id pinfo kind cmd cwd session_path agent_pid
     while IFS= read -r pane_id; do
       [[ -n "$pane_id" ]] || continue
       pinfo="$($herdr_bin pane process-info --pane "$pane_id" 2>/dev/null || true)"
@@ -80,6 +100,20 @@ save_state() {
       if jq -e '.result.process_info.foreground_processes[]? | select((.argv0 == "nvim") or (.name == "nvim"))' <<<"$pinfo" >/dev/null; then
         kind="nvim"
         cmd="$(jq -r '.result.process_info.foreground_processes[]? | select((.argv0 == "nvim") or (.name == "nvim")) | if (.argv | type) == "array" then (.argv | @sh) else (.cmdline // "nvim") end' <<<"$pinfo" | head -1)"
+      elif jq -e '.result.process_info.foreground_processes[]? | select((.argv0 == "claude") or (.cmdline // "" | test("(^|/)claude( |$)")))' <<<"$pinfo" >/dev/null; then
+        kind="claude"
+        agent_pid="$(jq -r '.result.process_info.foreground_processes[]? | select((.argv0 == "claude") or (.cmdline // "" | test("(^|/)claude( |$)"))) | .pid' <<<"$pinfo" | head -1)"
+        session_path="$(claude_session_from_pid "$agent_pid" || true)"
+        if ps eww -p "$agent_pid" 2>/dev/null | grep -Fq 'ANTHROPIC_BASE_URL=http://127.0.0.1:8317'; then
+          cmd="claudex"
+        else
+          cmd="claude"
+        fi
+        if [[ -n "$session_path" ]]; then
+          cmd="$cmd --resume $(printf '%q' "$session_path")"
+        else
+          cmd="$cmd --continue"
+        fi
       elif jq -e '.result.process_info.foreground_processes[]? | select((.argv0 == "pi") or (.name == "pi") or ((.name == "node") and (.argv0 == "pi")))' <<<"$pinfo" >/dev/null; then
         kind="pi"
         session_path="$(jq -r --arg pane_id "$pane_id" '.result.agents[]? | select(.pane_id == $pane_id and .agent == "pi") | .agent_session.value // empty' <<<"$agents" | head -1)"
@@ -92,16 +126,13 @@ save_state() {
         kind="codex"
         session_path="$(jq -r --arg pane_id "$pane_id" '.result.agents[]? | select(.pane_id == $pane_id and .agent == "codex") | .agent_session.value // empty' <<<"$agents" | head -1)"
         if [[ -z "$session_path" ]]; then
-          codex_pid="$(jq -r '.result.process_info.foreground_processes[]? | select((.argv0 == "codex") or (.name == "codex") or (.cmdline // "" | test("(^|/)codex( |$)"))) | .pid' <<<"$pinfo" | head -1)"
-          session_path="$(codex_session_from_pid "$codex_pid" || true)"
+          agent_pid="$(jq -r '.result.process_info.foreground_processes[]? | select((.argv0 == "codex") or (.name == "codex") or (.cmdline // "" | test("(^|/)codex( |$)"))) | .pid' <<<"$pinfo" | head -1)"
+          session_path="$(codex_session_from_pid "$agent_pid" || true)"
         fi
         if [[ -n "$session_path" ]]; then
           cmd="codex resume $(printf '%q' "$session_path")"
         else
           cmd="codex resume --last"
-        fi
-        if [[ -x "$codex_title_watch" ]]; then
-          cmd="$(printf '%q' "$codex_title_watch") & $cmd"
         fi
       fi
 
@@ -146,7 +177,7 @@ restore_state() {
   require_jq
   [[ -f "$state_file" ]] || { echo "herdr-resurrect: no state file: $state_file" >&2; exit 1; }
 
-  local pane_id cmd kind cwd run_cmd exists restored=0 skipped=0 missing=0 restored_file
+  local pane_id cmd kind cwd launch_cmd run_cmd exists restored=0 skipped=0 missing=0 restored_file
   restored_file="$(mktemp)"
   trap 'rm -f "$restored_file"' RETURN
   while IFS= read -r row; do
@@ -154,9 +185,19 @@ restore_state() {
     kind="$(jq -r '.kind' <<<"$row")"
     cwd="$(jq -r '.cwd // empty' <<<"$row")"
     cmd="$(jq -r '.command' <<<"$row")"
-    run_cmd="$cmd"
+    if [[ "$kind" == "codex" && "$cmd" == *herdr-codex-title-watch* ]]; then
+      cmd="${cmd#* & }"
+    fi
+    if [[ "$kind" == "codex" && -x "$codex_title_watch" ]]; then
+      launch_cmd="{ $(printf '%q' "$codex_title_watch") & $cmd; }"
+    elif [[ "$kind" == "claude" && -x "$claude_title_watch" ]]; then
+      launch_cmd="{ $(printf '%q' "$claude_title_watch") & $cmd; }"
+    else
+      launch_cmd="$cmd"
+    fi
+    run_cmd="$launch_cmd"
     if [[ -n "$cwd" && -d "$cwd" ]]; then
-      run_cmd="cd $(printf '%q' "$cwd") && exec $cmd"
+      run_cmd="cd $(printf '%q' "$cwd") && $launch_cmd"
     fi
 
     exists="$($herdr_bin pane get "$pane_id" 2>/dev/null || true)"

@@ -286,6 +286,54 @@ filenames:
       style:
         foreground: red
 
+  Brewfile:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
+  Brewfile.1password:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
+  Brewfile.developer:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
+  Brewfile.lock.json:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
+  Brewfile.personal:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
+  Brewfile.rust:
+    filename:
+      foreground: brightmagenta
+    icon:
+      glyph: ""
+      style:
+        foreground: brightmagenta
+
   package.lock:
     filename:
       foreground: brightmagenta
@@ -344,6 +392,22 @@ filenames:
       style:
         foreground: brightcyan
 
+  _claude:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
+  _cmp-compat.bash:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
   _dust:
     filename:
       foreground: brightcyan
@@ -361,6 +425,22 @@ filenames:
         foreground: brightcyan
 
   _fd:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
+  _herdr:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
+  _hs:
     filename:
       foreground: brightcyan
     icon:
@@ -480,6 +560,14 @@ filenames:
       style:
         foreground: brightcyan
 
+  claude.bash:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
   cheatsheet:
     icon:
       glyph: "󰊕"
@@ -517,6 +605,22 @@ filenames:
         foreground: brightcyan
 
   fd.bash:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
+  herdr.bash:
+    filename:
+      foreground: brightcyan
+    icon:
+      glyph: "󰌶"
+      style:
+        foreground: brightcyan
+
+  hs.bash:
     filename:
       foreground: brightcyan
     icon:
