@@ -45,7 +45,7 @@ grep -q 'User preserve-me' "$FIXTURE/home/.config/ssh/config"
 [[ $(readlink "$FIXTURE/home/.config/ssh/identity.conf") == "$ROOT/auth/ssh/identities/1password" ]]
 [[ $(readlink "$FIXTURE/home/.config/git/themes/sourdiesel") == "$ROOT/auth/git/themes/sourdiesel" ]]
 grep -Fxq "$ROOT/auth/git/base" < <(git config --file "$FIXTURE/home/.config/git/config" --get-all include.path)
-[[ $(git config --file "$FIXTURE/home/.config/git/config" user.name) == 'Vivek Jha' ]]
+[[ $(git config --file "$FIXTURE/home/.config/git/config" user.name) == "$(git config --file "$ROOT/auth/git/config" user.name)" ]]
 [[ $(git config --file "$FIXTURE/home/.config/git/config" commit.gpgsign) == true ]]
 grep -Fxq '{"defaultMode":"lite"}' "$FIXTURE/home/.config/ponytail/config.json"
 grep -Fxq "$ROOT" "$FIXTURE/home/.local/state/dotfiles/root"
