@@ -6,6 +6,7 @@ cask "alfred"
 cask "alt-tab"
 cask "anki"
 cask "thebrowsercompany-dia"
+cask "capcut" # Personal preference: retain on this fork.
 cask "chatgpt"
 cask "claude"
 cask "cleanshot"
