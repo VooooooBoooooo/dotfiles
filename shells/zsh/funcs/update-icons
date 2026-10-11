@@ -24,6 +24,7 @@ dir_icons=(
   "/Applications/Postman.app" "$icon_dir/postman.png"
   "/Applications/Skim.app" "$icon_dir/skim.png"
   "/Applications/WezTerm.app" "$icon_dir/wezterm.png"
+  "$HOME/Applications/Chrome Apps.localized/Crunchyroll.app" "$icon_dir/crunchyroll.png"
 
   "$HOME/Developer" "$icon_dir/developer.png"
   "$HOME/Downloads" "$icon_dir/download.png"
