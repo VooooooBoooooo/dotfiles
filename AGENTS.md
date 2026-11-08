@@ -38,6 +38,7 @@ Personal dotfiles/bootstrap repo. Prefer source-of-truth files over generated or
 
 ## Special Workflows
 
+- Upstream updates: a request to update from upstream authorizes fetching, rebasing `main` onto `upstream/main`, running relevant checks, and pushing to `origin/main` without another confirmation. Preserve fork-specific preferences and unrelated local work. Fetch `origin` again before publishing; use an explicit `--force-with-lease` tied to the verified pre-rebase remote tip when rewriting history, never plain `--force`. Pause for ambiguous conflicts, unexpected remote advances, new test failures, or other risks; report known pre-existing failures rather than silently treating checks as passing.
 - Handoffs: read the handoff, then verify branch/status/diff and live files before continuing.
 - SourDiesel: edit palette/consumers, render, check; do not hand-edit generated inventory alone.
 - Codex config: update `ai/codex/config/preferences.toml`, then apply with `ai/codex/scripts/apply_preferences.py`.
